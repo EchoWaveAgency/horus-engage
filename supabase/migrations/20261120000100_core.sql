@@ -205,7 +205,7 @@ create or replace function app.orgs_defaults()
 returns trigger language plpgsql security definer set search_path = public, pg_temp as $$
 begin
   insert into public.bot_settings (org_id) values (new.id) on conflict do nothing;
-  insert into public.org_secrets (org_id, integration_secret) values (new.id, encode(gen_random_bytes(24), 'hex')) on conflict do nothing;
+  insert into public.org_secrets (org_id, integration_secret) values (new.id, left(replace(gen_random_uuid()::text || gen_random_uuid()::text, '-', ''), 48)) on conflict do nothing;
   return new;
 end $$;
 create trigger trg_orgs_defaults after insert on public.orgs for each row execute function app.orgs_defaults();

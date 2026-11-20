@@ -7,7 +7,7 @@ begin
 end $$;
 create or replace function public.rotate_integration_secret(p_org uuid)
 returns text language plpgsql volatile security definer set search_path = public, app, pg_temp as $$
-declare v text := encode(gen_random_bytes(24), 'hex');
+declare v text := left(replace(gen_random_uuid()::text || gen_random_uuid()::text, '-', ''), 48);
 begin
   perform app.require_member(p_org, array['owner']);
   update public.org_secrets set integration_secret = v, updated_at = now() where org_id = p_org;
