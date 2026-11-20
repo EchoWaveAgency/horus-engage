@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body { background: theme("colors.coal.950"); color: theme("colors.ivory.100"); color-scheme: dark; }
+@layer components {
+  .card { @apply rounded-xl border border-coal-600/70 bg-coal-800; }
+  .muted { @apply text-ivory-300/70; }
+  .input { @apply w-full rounded-lg border border-coal-500 bg-coal-900 px-3 py-2.5 text-sm text-ivory-100 placeholder:text-ivory-300/40 focus:border-gold-300 focus:outline-none focus:ring-2 focus:ring-gold-500/30; }
+  .label { @apply mb-1 block text-xs font-medium text-ivory-300/80; }
+  .btn { @apply inline-flex min-h-[42px] items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-300 disabled:opacity-50; }
+  .btn-gold { @apply btn bg-gold-300 text-coal-950 hover:bg-gold-100; }
+  .btn-ghost { @apply btn border border-coal-500 bg-coal-900 text-ivory-100 hover:border-gold-300; }
+  .th { @apply px-3 py-2 text-start text-[11px] font-semibold uppercase tracking-wide text-ivory-300/60; }
+  .td { @apply px-3 py-2.5 text-sm; }
+  .num { direction: ltr; unicode-bidi: isolate; font-variant-numeric: tabular-nums; }
+  .chip { @apply inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-bold; }
+}

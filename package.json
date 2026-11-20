@@ -1,0 +1,39 @@
+{
+  "name": "horus-engage",
+  "version": "0.1.0",
+  "private": true,
+  "description": "HORUS Engage — multi-client WhatsApp, Messenger, Instagram DM and comment automation with call-center handoff (EchoWave).",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "db:test": "bash scripts/db-test.sh",
+    "stack:local": "bash scripts/local-stack.sh",
+    "demo:data": "node --env-file=.env.local scripts/demo-data.mjs"
+  },
+  "dependencies": {
+    "@fontsource/ibm-plex-sans-arabic": "^5.3.0",
+    "@supabase/ssr": "^0.12.7",
+    "@supabase/supabase-js": "^2.117.2",
+    "next": "^14.2.35",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "server-only": "^0.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.4",
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.7",
+    "autoprefixer": "^10.6.1",
+    "eslint": "^8.57.1",
+    "eslint-config-next": "^14.2.35",
+    "postcss": "^8.5.28",
+    "puppeteer-core": "^24.0.0",
+    "tailwindcss": "^3.4.19",
+    "typescript": "5.6",
+    "vitest": "^5.0.2"
+  }
+}
