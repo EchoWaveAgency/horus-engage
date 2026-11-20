@@ -17,5 +17,5 @@ Next.js 14 (App Router, Server Actions) · Supabase (Postgres 16, Auth, RLS) · 
 4. The language model (`src/lib/ai.ts`) only picks an intent / service / FAQ the rules already know; it never writes customer-facing text. Off unless the client enables it.
 5. Once a person has a conversation (agent reply, take-over, or a reply from Meta Business Suite = echo) the bot stays quiet until handed back.
 6. Comments: one private reply per comment within 7 days; own replies ignored; public replies rotate; spam / abuse hidden (never deleted).
-7. Service role only in: `app/api/webhooks/meta`, `lib/runner.ts`, `lib/integration.ts` (dispatcher job), and sending a reply the agent's session just logged (`actions/inbox.ts`).
+7. Service role only in: `app/api/webhooks/meta`, `lib/runner.ts`, `lib/integration.ts` (dispatcher job, and right after the Meta webhook stores events), and sending a reply the agent's session just logged (`actions/inbox.ts`).
 8. Bilingual UI (Arabic RTL default). Don't invent client policy (prices, hours, addresses) — leave fields empty for the client.

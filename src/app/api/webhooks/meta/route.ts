@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { deliverEvents } from "@/lib/integration";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { parseMetaWebhook, type MetaEvent } from "@/lib/meta/parse";
 import { adminClient } from "@/lib/server/admin";
@@ -46,5 +47,10 @@ export async function POST(req: Request) {
     }
   }
   if (unstored) return NextResponse.json({ error: "retry" }, { status: 503 });
+  // Hand new lead / booking / handoff events to the client's system right away (the scheduled job is only a backstop:
+  // Vercel Hobby runs it once a day). Best effort — a failure stays queued with back-off.
+  if (events.some((e) => e.type !== "status")) {
+    try { await deliverEvents(5); } catch (e) { console.error(`[engage] deliver: ${e instanceof Error ? e.message : e}`); }
+  }
   return NextResponse.json({ received: events.length, results });
 }

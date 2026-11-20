@@ -3,5 +3,5 @@
   "framework": "nextjs",
   "buildCommand": "node scripts/migrate.mjs && next build",
   "regions": ["fra1"],
-  "crons": [{ "path": "/api/jobs/dispatch", "schedule": "* * * * *" }]
+  "crons": [{ "path": "/api/jobs/dispatch", "schedule": "0 3 * * *" }]
 }
