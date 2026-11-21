@@ -24,6 +24,8 @@ function msg(e: { message?: string } | null, ar: boolean): string {
     [/services_code_check/, "الكود بالإنجليزي والأرقام والشرطة (مثل LASER).", "Use letters, digits and dashes (e.g. LASER)."],
     [/permission denied|row-level security|42501/, "ليست لديك صلاحية.", "You don't have permission."],
     [/token looks invalid/, "التوكن غير صحيح.", "The token looks invalid."],
+    [/placeholder/, "فيه خانة بين [ ] لسه ما اتملتش — املاها بالمعلومة المعتمدة، أو خلّيها متوقفة.", "A [placeholder] is still unfilled — fill it with the approved information, or keep it switched off."],
+    [/invalid booking flow/, "طريقة الحجز غير صحيحة.", "Invalid booking flow."],
   ];
   const r = rules.find(([re]) => re.test(m));
   return r ? (ar ? r[1] : r[2]) : ar ? "حدث خطأ، لم يُحفظ شيء." : "Something went wrong; nothing was saved.";
@@ -95,6 +97,10 @@ export async function saveService(form: FormData) {
     duration_ar: s(form, "duration_ar") || null, duration_en: s(form, "duration_en") || null,
     booking_mode: s(form, "booking_mode") === "human_only" ? "human_only" : "request",
     keywords: list(s(form, "keywords")), campaign_codes: list(s(form, "campaign_codes")), sort: Number(s(form, "sort")) || 100, is_active: form.get("is_active") === "on",
+    filter_question_ar: s(form, "filter_question_ar") || null, filter_question_en: s(form, "filter_question_en") || null,
+    // one option per line: "عربي | English"
+    filter_options: s(form, "filter_options").split("\n").map((l) => l.split("|").map((x) => x.trim())).filter(([a]) => a).slice(0, 10)
+      .map(([a, e]) => ({ ar: a, en: e || a })),
   };
   const { error } = id ? await ctx.supabase.from("services").update(row).eq("id", id) : await ctx.supabase.from("services").insert(row);
   if (error) go("/app/services", { error: msg(error, ctx.ar) });
@@ -104,7 +110,8 @@ export async function saveFaq(form: FormData) {
   const ctx = await requireOrg(["owner", "admin"]);
   const id = s(form, "id");
   const row = { org_id: ctx.org.id, service_id: s(form, "service_id") || null, question_ar: s(form, "question_ar"), question_en: s(form, "question_en") || s(form, "question_ar"),
-    answer_ar: s(form, "answer_ar"), answer_en: s(form, "answer_en") || s(form, "answer_ar"), keywords: list(s(form, "keywords")), is_active: form.get("is_active") === "on", updated_at: new Date().toISOString() };
+    answer_ar: s(form, "answer_ar"), answer_en: s(form, "answer_en") || s(form, "answer_ar"), keywords: list(s(form, "keywords")), is_active: form.get("is_active") === "on",
+    handoff: ["after_filter", "yes", "urgent"].includes(s(form, "handoff")) ? s(form, "handoff") : "no", updated_at: new Date().toISOString() };
   const { error } = id ? await ctx.supabase.from("faqs").update(row).eq("id", id) : await ctx.supabase.from("faqs").insert(row);
   if (error) go("/app/services", { error: msg(error, ctx.ar) });
   revalidatePath("/app/services"); go("/app/services", { ok: "1" });
@@ -116,6 +123,9 @@ export async function saveSettings(form: FormData) {
   const { error } = await ctx.supabase.rpc("save_bot_settings", { p_org: ctx.org.id, p: {
     enabled: b("enabled"), ai_enabled: b("ai_enabled"), ask_phone: b("ask_phone"),
     greeting_ar: s(form, "greeting_ar"), greeting_en: s(form, "greeting_en"), handoff_ar: s(form, "handoff_ar"), handoff_en: s(form, "handoff_en"),
+    booking_flow: s(form, "booking_flow") === "intake" ? "intake" : "slots",
+    intake_visit_ar: s(form, "intake_visit_ar"), intake_visit_en: s(form, "intake_visit_en"), intake_done_ar: s(form, "intake_done_ar"), intake_done_en: s(form, "intake_done_en"),
+    emergency_ar: s(form, "emergency_ar"), emergency_en: s(form, "emergency_en"), medical_ar: s(form, "medical_ar"), medical_en: s(form, "medical_en"),
     comment_public_reply: b("comment_public_reply"), comment_private_reply: b("comment_private_reply"), comment_hide_spam: b("comment_hide_spam"),
     comment_escalate: b("comment_escalate"), comment_thank_positive: b("comment_thank_positive"),
     comment_replies_ar: s(form, "comment_replies_ar").split("\n").map((x) => x.trim()).filter(Boolean),

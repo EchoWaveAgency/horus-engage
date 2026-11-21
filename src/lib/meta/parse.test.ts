@@ -2,6 +2,19 @@ import { describe, expect, it } from "vitest";
 import { parseMetaWebhook } from "./parse";
 
 describe("parseMetaWebhook", () => {
+  it("routes Coexistence replies to the agent echo handler and ignores history", () => {
+    const events = parseMetaWebhook(JSON.stringify({ object: "whatsapp_business_account", entry: [{ id: "WABA", changes: [
+      { field: "smb_message_echoes", value: { metadata: { phone_number_id: "PN1" }, message_echoes: [
+        { from: "2020", to: "2010", id: "wamid.echo", text: { body: "Manual reply" } },
+        { from: "2020", to_user_id: "BSUID", id: "wamid.media", type: "image" },
+      ] } },
+      { field: "history", value: { metadata: { phone_number_id: "PN1" }, messages: [{ from: "2010", id: "wamid.old" }] } },
+    ] }] }));
+    expect(events).toEqual([
+      { type: "echo", channelKind: "whatsapp", channelExternalId: "PN1", contactExternalId: "2010", providerId: "wamid.echo", text: "Manual reply" },
+      { type: "echo", channelKind: "whatsapp", channelExternalId: "PN1", contactExternalId: "BSUID", providerId: "wamid.media", text: "" },
+    ]);
+  });
   it("WhatsApp: text with ad referral, button reply, list reply, voice note, statuses", () => {
     const ev = parseMetaWebhook(JSON.stringify({ object: "whatsapp_business_account", entry: [{ changes: [{ field: "messages", value: {
       metadata: { phone_number_id: "PN1" }, contacts: [{ wa_id: "2010", profile: { name: "Mariam" } }],

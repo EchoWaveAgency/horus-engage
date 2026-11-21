@@ -21,9 +21,9 @@ async function loadOrg(db: Db, orgId: string): Promise<Org> {
   const [{ data: org }, { data: settings }, { data: services }, { data: faqs }] = await Promise.all([
     db.from("orgs").select("timezone").eq("id", orgId).single(),
     db.from("bot_settings").select("*").eq("org_id", orgId).single(),
-    db.from("services").select("id, code, name_ar, name_en, summary_ar, summary_en, offer_ar, offer_en, price_ar, price_en, duration_ar, duration_en, booking_mode, keywords, campaign_codes")
+    db.from("services").select("id, code, name_ar, name_en, summary_ar, summary_en, offer_ar, offer_en, price_ar, price_en, duration_ar, duration_en, booking_mode, keywords, campaign_codes, filter_question_ar, filter_question_en, filter_options")
       .eq("org_id", orgId).eq("is_active", true).order("sort").order("code"),
-    db.from("faqs").select("question_ar, question_en, answer_ar, answer_en, keywords, service:services(code)").eq("org_id", orgId).eq("is_active", true),
+    db.from("faqs").select("question_ar, question_en, answer_ar, answer_en, keywords, handoff, service:services(code)").eq("org_id", orgId).eq("is_active", true),
   ]);
   return {
     timezone: org?.timezone ?? "Africa/Cairo",
@@ -48,9 +48,23 @@ async function token(db: Db, channelId: string) {
 }
 
 /** Sends queued outgoing messages of a step and records each result. */
-async function deliver(db: Db, ch: Ingest["channel"], to: string, ids: number[], outs: Result["say"]) {
+async function deliver(db: Db, g: Ingest, version: number, ids: number[], outs: Result["say"]) {
+  const ch = g.channel;
+  const to = g.contact.external_id;
   const tk = await token(db, ch.id);
   for (let i = 0; i < ids.length; i++) {
+    // The bot step can intentionally hand off and send a final acknowledgement. A newer
+    // conversation version means a subsequent message or agent action superseded that step.
+    const [conversation, settings] = await Promise.all([
+      db.from("conversations").select("version").eq("id", g.conversation_id).single(),
+      db.from("bot_settings").select("enabled").eq("org_id", g.org_id).single(),
+    ]);
+    if (conversation.data?.version !== version || !settings.data?.enabled) {
+      for (const id of ids.slice(i)) {
+        await db.rpc("svc_message_result", { p_id: id, p_ok: false, p_provider_id: null, p_error: "Bot reply suppressed before send" });
+      }
+      return;
+    }
     const payload = render(ch.kind, outs[i]);
     const r = ch.kind === "whatsapp" ? await sendWhatsApp(ch.external_id, tk, to, payload) : await sendMessenger(ch.external_id, tk, to, payload);
     await db.rpc("svc_message_result", { p_id: ids[i], p_ok: r.ok, p_provider_id: r.id ?? null, p_error: r.error ?? null });
@@ -99,15 +113,17 @@ export async function handleMessage(ev: Extract<MetaEvent, { type: "message" }>)
       if (e.code === "40001") return { handled: "superseded" };   // another message / a person moved the conversation on
       throw new Error(e.message);
     }
-    await deliver(db, g.channel, g.contact.external_id, ((applied as { message_ids: number[] }).message_ids ?? []), r.say);
+    const appliedStep = applied as { message_ids: number[]; version: number };
+    await deliver(db, g, appliedStep.version, appliedStep.message_ids ?? [], r.say);
     return { handled: r.status === "human" ? "handoff" : r.booking ? "booking" : "answered", reason: r.handoffReason, usedAi: r.usedAi ?? false };
   }
   return { handled: "superseded" };
 }
 
 export async function handleEcho(ev: Extract<MetaEvent, { type: "echo" }>) {
-  const { data } = await adminClient().rpc("svc_ingest_echo", { p: {
+  const { data, error } = await adminClient().rpc("svc_ingest_echo", { p: {
     channel_kind: ev.channelKind, channel_external_id: ev.channelExternalId, contact_external_id: ev.contactExternalId, text: ev.text, provider_id: ev.providerId } });
+  if (error) throw Object.assign(new Error(error.message), { stored: false });
   return data;
 }
 

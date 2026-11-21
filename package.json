@@ -12,7 +12,8 @@
     "test": "vitest run",
     "db:test": "bash scripts/db-test.sh",
     "stack:local": "bash scripts/local-stack.sh",
-    "demo:data": "node --env-file=.env.local scripts/demo-data.mjs"
+    "demo:data": "node --env-file=.env.local scripts/demo-data.mjs",
+    "content:load": "node --env-file=.env.local scripts/load-client-content.mjs"
   },
   "dependencies": {
     "@fontsource/ibm-plex-sans-arabic": "^5.3.0",
