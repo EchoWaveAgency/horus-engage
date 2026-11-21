@@ -21,9 +21,9 @@ async function loadOrg(db: Db, orgId: string): Promise<Org> {
   const [{ data: org }, { data: settings }, { data: services }, { data: faqs }] = await Promise.all([
     db.from("orgs").select("timezone").eq("id", orgId).single(),
     db.from("bot_settings").select("*").eq("org_id", orgId).single(),
-    db.from("services").select("id, code, name_ar, name_en, summary_ar, summary_en, offer_ar, offer_en, price_ar, price_en, duration_ar, duration_en, booking_mode, keywords, campaign_codes")
+    db.from("services").select("id, code, name_ar, name_en, summary_ar, summary_en, offer_ar, offer_en, price_ar, price_en, duration_ar, duration_en, booking_mode, keywords, campaign_codes, filter_question_ar, filter_question_en, filter_options")
       .eq("org_id", orgId).eq("is_active", true).order("sort").order("code"),
-    db.from("faqs").select("question_ar, question_en, answer_ar, answer_en, keywords, service:services(code)").eq("org_id", orgId).eq("is_active", true),
+    db.from("faqs").select("question_ar, question_en, answer_ar, answer_en, keywords, handoff, service:services(code)").eq("org_id", orgId).eq("is_active", true),
   ]);
   return {
     timezone: org?.timezone ?? "Africa/Cairo",

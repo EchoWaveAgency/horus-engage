@@ -45,6 +45,24 @@ export default async function Settings({ searchParams }: { searchParams: { ok?: 
             <input name="private_message_ar" defaultValue={s?.private_message_ar} className="input" /></label>
         </section>
         <section className="card space-y-3 p-4 lg:col-span-2">
+          <h2 className="font-semibold text-gold-100">{ar ? "طريقة الحجز" : "Booking flow"}</h2>
+          <select name="booking_flow" defaultValue={s?.booking_flow ?? "slots"} className="input">
+            <option value="slots">{ar ? "البوت يسجّل طلب الحجز: اليوم + الوقت، والفريق يأكد" : "The bot takes a booking request: day + time; the team confirms"}</option>
+            <option value="intake">{ar ? "أسئلة الحجز: سؤال الفلترة ← أول كشف ولا متابعة ← الوقت ← الاسم ← تحويل لخدمة العملاء" : "Intake: filter question → first visit or follow-up → time → name → customer service"}</option>
+          </select>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="block"><span className="label">{ar ? "سؤال أول كشف ولا متابعة (فاضي = مايتسألش)" : "First visit or follow-up question (empty = not asked)"}</span><input name="intake_visit_ar" defaultValue={s?.intake_visit_ar ?? ""} placeholder="ده أول كشف ليك عندنا ولا متابعة؟" className="input" /></label>
+            <label className="block"><span className="label">Visit question (EN)</span><input name="intake_visit_en" defaultValue={s?.intake_visit_en ?? ""} className="input" dir="ltr" /></label>
+            <label className="block"><span className="label">{ar ? "رسالة آخر الأسئلة ({name} = الاسم)" : "After the last question ({name} = name)"}</span><textarea name="intake_done_ar" rows={2} defaultValue={s?.intake_done_ar ?? ""} className="input" /></label>
+            <label className="block"><span className="label">After the last question (EN)</span><textarea name="intake_done_en" rows={2} defaultValue={s?.intake_done_en ?? ""} className="input" dir="ltr" /></label>
+            <label className="block"><span className="label">{ar ? "رد الطوارئ" : "Emergency reply"}</span><textarea name="emergency_ar" rows={2} defaultValue={s?.emergency_ar ?? ""} className="input" /></label>
+            <label className="block"><span className="label">Emergency (EN)</span><textarea name="emergency_en" rows={2} defaultValue={s?.emergency_en ?? ""} className="input" dir="ltr" /></label>
+            <label className="block"><span className="label">{ar ? "رد السؤال الطبي (دوا، جرعة، تشخيص)" : "Medical question reply (medicine, dose, diagnosis)"}</span><textarea name="medical_ar" rows={2} defaultValue={s?.medical_ar ?? ""} className="input" /></label>
+            <label className="block"><span className="label">Medical reply (EN)</span><textarea name="medical_en" rows={2} defaultValue={s?.medical_en ?? ""} className="input" dir="ltr" /></label>
+          </div>
+          <p className="muted text-xs">{ar ? "الخانات الفاضية بتستخدم الرد الافتراضي." : "Empty fields use the default reply."}</p>
+        </section>
+        <section className="card space-y-3 p-4 lg:col-span-2">
           <h2 className="font-semibold text-gold-100">{ar ? "الربط بنظام العميل (مثل Golden Care OS)" : "Client system integration (e.g. Golden Care OS)"}</h2>
           <p className="muted text-xs">{ar ? "كل عميل جديد، وطلب حجز، وتحويل لموظف يتبعت لنظامكم موقّعًا (X-Engage-Signature) مع إعادة المحاولة تلقائيًا." : "Every new lead, booking request and handoff is sent to your system, signed (X-Engage-Signature), with automatic retries."}</p>
           <label className="block"><span className="label">{ar ? "رابط الاستقبال" : "Receiving URL"}</span><input name="integration_url" defaultValue={s?.integration_url ?? ""} placeholder="https://…/api/integrations/engage" className="input num" /></label>

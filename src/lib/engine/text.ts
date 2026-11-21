@@ -11,15 +11,19 @@ export function norm(t: string): string {
     .replace(/\s+/g, " ").trim();
 }
 
-export type Intent = "human" | "book" | "price" | "duration" | "location" | "hours" | "medical" | "complaint" | "thanks" | "greeting" | "menu" | "yes" | "no";
+export type Intent = "human" | "emergency" | "medication" | "book" | "price" | "duration" | "location" | "hours" | "medical" | "complaint" | "thanks" | "greeting" | "menu" | "yes" | "no";
 
 // Order matters: safety / people first.
 const RULES: [Intent, RegExp][] = [
   ["human", /(موظف|حد يكلمني|حد يرد|عايز اكلم|عاوز اكلم|اكلم حد|كلموني|كلمني|اتصلوا|اتصل بي|خدمه العملاء|customer service|\bagent\b|\bhuman\b|call me|real person|representative)/],
   // (JavaScript's \b does not work between Arabic letters: whole Arabic words use (?:^|\s) … (?=\s|$).)
-  ["complaint", /(شكوي|شكوه|سيي|(?:^|\s)وحش(?:ه)?(?=\s|$)|نصب|نصاب|اتنصب|مستاء|زعلان|مشكله|اسوا|complain|bad experience|terrible|scam|\brefund\b|فلوسي|ضحك علي)/],
+  ["complaint", /(شكوي|شكوه|سيي|(?:^|\s)وحش(?:ه)?(?=\s|$)|نصب|نصاب|اتنصب|مستاء|زعلان|مشكله(?! جلدي)|اسوا|complain|bad experience|terrible|scam|\brefund\b|فلوسي|ضحك علي)/],
   // Symptoms / conditions / medicines → a person. ("Does it hurt?" is a procedure question with an approved FAQ, not a symptom.)
-  ["medical", /(حامل|(?:^|\s)حمل(?=\s|$)|رضاعه|حساسيه|(?:^|\s)دوا(?=\s|$)|ادويه|مرض|سكري|(?:^|\s)سكر(?=\s|$)|ضغط|التهاب|(?:^|\s)الم(?=\s|$)|عندي وجع|وجعني|نزيف|حرق|ورم|اعراض|pregnan|allerg|medication|\bpain\b|diabet|bleed|\bburn|disease|symptom|infection)/],
+  // Emergencies: the bot tells the customer to go to the nearest emergency room and hands over at once.
+  ["emergency", /(نزيف|مش (قادر|قادره|عارف|عارفه) اتنفس|ضيق (في )?(ال)?تنفس|اغماء|اغمي|(?:^|\s)حادثه(?=\s|$)|طواري|وجع (شديد|جامد)|الم (شديد|جامد)|can ?t breathe|cannot breathe|unconscious|fainted|accident|emergency|severe pain|heavy bleeding)/],
+  // Questions only a doctor may answer: which medicine, what dose, what treatment, a diagnosis.
+  ["medication", /((?:^|\s)(ال)?دوا(?=\s|$)|ادويه|(?:^|\s)(ال)?علاج(?=\s|$)|جرعه|تشخيص|اخد ايه|اخد اي(?=\s|$)|medication|medicine|\bdose|dosage|diagnos|prescri)/],
+  ["medical", /(حامل|(?:^|\s)حمل(?=\s|$)|رضاعه|حساسيه|مرض|سكري|(?:^|\s)سكر(?=\s|$)|ضغط|التهاب|(?:^|\s)الم(?=\s|$)|عندي وجع|وجعني|نزيف|حرق|ورم|اعراض|pregnan|allerg|\bpain\b|diabet|bleed|\bburn|disease|symptom|infection)/],
   ["book", /(احجز|حجز|موعد|ميعاد|معاد|\bbook|appointment|reserv)/],
   ["price", /(بكام|السعر|سعر|اسعار|تكلف|الحساب كام|\bprice|\bcost|how much|\bfees?\b)/],
   ["duration", /(المده|مده|بتاخد قد ايه|قد ايه وقت|كام جلسه|عدد الجلسات|duration|how long|how many sessions)/],
@@ -37,10 +41,12 @@ export function intents(text: string): Intent[] {
   return RULES.filter(([, re]) => re.test(t)).map(([i]) => i);
 }
 
-/** Campaign code anywhere in the text: GF26-LASER, gf26 laser… → upper form, or null. */
+/** Campaign code anywhere in the text: GF26-LASER, gf26 laser, D1… → upper form, or null. */
 export function campaignCode(text: string, known: string[]): string | null {
   const t = (text ?? "").toUpperCase().replace(/[\s_]+/g, "-");
-  return [...known].sort((a, b) => b.length - a.length).find((c) => t.includes(c)) ?? null;
+  const esc = (c: string) => c.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  // Whole tokens only, so a short ad code like "D1" never matches inside "SD10" or a phone number.
+  return [...known].sort((a, b) => b.length - a.length).find((c) => new RegExp(`(^|[^A-Z0-9])${esc(c)}($|[^A-Z0-9])`).test(t)) ?? null;
 }
 
 /** Egyptian-first phone to E.164; null when it cannot be a number. Mirrors app.normalize_phone. */
