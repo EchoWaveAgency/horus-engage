@@ -36,6 +36,16 @@ export function parseMetaWebhook(raw: string): MetaEvent[] {
       for (const ch of (entry.changes ?? []) as Any[]) {
         const v = ch.value ?? {};
         const pnid = v.metadata?.phone_number_id;
+        if (ch.field === "smb_message_echoes") {
+          for (const message of (v.message_echoes ?? []) as Any[]) {
+            const recipient = message.to ?? message.to_user_id;
+            if (!pnid || !recipient || !message.id) continue;
+            out.push({ type: "echo", channelKind: "whatsapp", channelExternalId: pnid,
+              contactExternalId: recipient, providerId: message.id, text: message.text?.body ?? "" });
+          }
+          continue;
+        }
+        if (ch.field !== "messages") continue;
         const names = new Map<string, string>(((v.contacts ?? []) as Any[]).filter((c) => c.wa_id && c.profile?.name).map((c) => [c.wa_id, c.profile.name]));
         for (const s of (v.statuses ?? []) as Any[]) if (s.id && s.status) out.push({ type: "status", providerId: s.id, status: s.status });
         for (const m of (v.messages ?? []) as Any[]) {
