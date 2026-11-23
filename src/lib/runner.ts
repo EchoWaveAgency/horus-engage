@@ -2,6 +2,7 @@ import "server-only";
 import { adminClient } from "@/lib/server/admin";
 import { mediaStep, menu, step, type Ctx, type Event, type Faq, type Result, type Service, type Settings, type State } from "@/lib/engine/bot";
 import { planComment, type CommentSettings } from "@/lib/engine/comments";
+import { commentsPaused, gate } from "@/lib/engine/gate";
 import { historyBody, plain, render } from "@/lib/engine/render";
 import type { MetaEvent } from "@/lib/meta/parse";
 import { hideComment, privateReply, replyToComment, sendMessenger, sendWhatsApp } from "@/lib/meta/graph";
@@ -14,7 +15,8 @@ type Db = ReturnType<typeof adminClient>;
 type Ingest = { action: string; org_id: string; conversation_id: string; version: number; status: string; bot_state: State;
   channel: { id: string; kind: "whatsapp" | "messenger" | "instagram"; external_id: string };
   contact: { id: string; name: string | null; phone: string | null; lang: "ar" | "en"; external_id: string }; referral: Record<string, string> | null };
-type Org = { timezone: string; settings: Settings & CommentSettings & { enabled: boolean; ai_enabled: boolean; hours_from: string | null; hours_to: string | null; private_message_ar: string; private_message_en: string };
+type Org = { timezone: string; settings: Settings & CommentSettings & { enabled: boolean; ai_enabled: boolean; hours_from: string | null; hours_to: string | null; private_message_ar: string; private_message_en: string;
+    test_numbers: string[]; staff_numbers: string[] };
   services: Service[]; faqs: Faq[] };
 
 async function loadOrg(db: Db, orgId: string): Promise<Org> {
@@ -79,6 +81,8 @@ export async function handleMessage(ev: Extract<MetaEvent, { type: "message" }>)
 
   const org = await loadOrg(db, g.org_id);
   if (!org.settings.enabled) return { handled: "bot_off" };
+  const allowed = gate(g.contact.phone, org.settings);   // staff never; while testing, only the test numbers
+  if (allowed !== "ok") return { handled: allowed };
   const ctx: Ctx = {
     channel: g.channel.kind, contact: { name: g.contact.name, phone: g.contact.phone, lang: g.contact.lang },
     services: org.services, faqs: org.faqs, settings: org.settings, today: localToday(org.timezone),
@@ -122,6 +126,7 @@ export async function handleComment(ev: Extract<MetaEvent, { type: "comment" }>)
 
   const org = await loadOrg(db, g.org_id);
   const s = org.settings;
+  if (commentsPaused(s)) return { handled: "test_mode" };   // stored; people handle comments while testing
   const ageDays = ev.at ? (Date.now() - new Date(ev.at).getTime()) / 86400_000 : 0;
   let plan = planComment(ev.text, ev.commentId, s, { isReply: Boolean(ev.parentId), ageDays });
   if (plan.classification === "other" && s.ai_enabled && ev.text.trim()) {

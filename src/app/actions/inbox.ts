@@ -25,6 +25,8 @@ function msg(e: { message?: string } | null, ar: boolean): string {
     [/permission denied|row-level security|42501/, "ليست لديك صلاحية.", "You don't have permission."],
     [/token looks invalid/, "التوكن غير صحيح.", "The token looks invalid."],
     [/placeholder/, "فيه خانة بين [ ] لسه ما اتملتش — املاها بالمعلومة المعتمدة، أو خلّيها متوقفة.", "A [placeholder] is still unfilled — fill it with the approved information, or keep it switched off."],
+    [/invalid phone number/, "فيه رقم مش صحيح — اكتبه كده: 01xxxxxxxxx", "A number is not valid — write it like 01xxxxxxxxx"],
+    [/too many numbers/, "عدد الأرقام كبير.", "Too many numbers."],
     [/invalid booking flow/, "طريقة الحجز غير صحيحة.", "Invalid booking flow."],
   ];
   const r = rules.find(([re]) => re.test(m));
@@ -131,6 +133,13 @@ export async function saveSettings(form: FormData) {
     comment_replies_ar: s(form, "comment_replies_ar").split("\n").map((x) => x.trim()).filter(Boolean),
     private_message_ar: s(form, "private_message_ar"), integration_url: s(form, "integration_url"),
   } });
+  if (error) go("/app/settings", { error: msg(error, ctx.ar) });
+  revalidatePath("/app/settings"); go("/app/settings", { ok: "1" });
+}
+export async function saveNumbers(form: FormData) {
+  const ctx = await requireOrg(["owner", "admin"]);
+  const lines = (k: string) => s(form, k).split(/[\n,،]/).map((x) => x.trim()).filter(Boolean);
+  const { error } = await ctx.supabase.rpc("save_bot_numbers", { p_org: ctx.org.id, p_test: lines("test_numbers"), p_staff: lines("staff_numbers") });
   if (error) go("/app/settings", { error: msg(error, ctx.ar) });
   revalidatePath("/app/settings"); go("/app/settings", { ok: "1" });
 }

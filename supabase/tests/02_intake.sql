@@ -58,3 +58,16 @@ select test.assert((select status = 'human' and needs_attention and handoff_reas
 select test.assert((select name = 'مني أحمد' from public.contacts c join public.conversations v on v.contact_id = c.id where v.id = :'ic'), 'the name the patient gave replaces the profile name');
 select test.assert((select preferred_day is null and preferred_period = 'evening' and note like '%تقويم%' from public.bookings where conversation_id = :'ic'), 'booking request: period, no day, intake answers in the note');
 select test.assert((select count(*) = 1 from public.integration_outbox where event = 'booking_request' and payload->>'conversation_id' = :'ic'), 'call-center system gets the booking request');
+
+-- ---------- test mode / staff numbers
+set role authenticated;
+select test.login(:'owner');
+select public.save_bot_numbers(:'gc', array['01001112233', ' ', '+20 100 111 2233'], array['01277000000']) is not null as x \gset
+select test.assert((select test_numbers = array['+201001112233'] and staff_numbers = array['+201277000000'] from public.bot_settings where org_id = :'gc'), 'numbers normalized, blanks and duplicates dropped');
+select test.expect_error($$select public.save_bot_numbers('00000000-0000-4000-8000-00000000000a', array['12'], '{}')$$, 'invalid phone number');
+select public.save_bot_numbers(:'gc', '{}', array['01277000000']) is not null as x \gset
+select test.assert((select test_numbers = '{}' from public.bot_settings where org_id = :'gc'), 'test mode off');
+select test.login(:'ag1');
+select test.expect_error($$select public.save_bot_numbers('00000000-0000-4000-8000-00000000000a', '{}', '{}')$$, 'permission');
+reset role;
+select test.login(null);
