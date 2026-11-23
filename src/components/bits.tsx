@@ -5,6 +5,8 @@ export const REASON: Record<string, { ar: string; en: string }> = {
   asked_human: { ar: "طلب موظف", en: "Asked for a person" }, medical_question: { ar: "سؤال طبي", en: "Medical question" },
   complaint: { ar: "شكوى", en: "Complaint" }, not_understood: { ar: "البوت مفهمش", en: "Bot did not understand" },
   price_unknown: { ar: "سعر غير معتمد", en: "No approved price" }, booking_human: { ar: "حجز مع موظف", en: "Booking with a person" }, media: { ar: "صوت / صورة", en: "Voice / image" },
+  emergency: { ar: "طوارئ", en: "Emergency" }, faq: { ar: "سؤال محتاج موظف", en: "Question for a person" },
+  intake_done: { ar: "خلّص أسئلة الحجز", en: "Finished booking questions" },
 };
 export const CLASS: Record<string, { ar: string; en: string; tone: string }> = {
   inquiry: { ar: "استفسار", en: "Inquiry", tone: "bg-sky-500/15 text-sky-200" }, price: { ar: "سعر", en: "Price", tone: "bg-gold-300/20 text-gold-100" },

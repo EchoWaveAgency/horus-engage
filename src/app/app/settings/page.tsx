@@ -2,7 +2,7 @@ import { headers } from "next/headers";
 import { requireOrg } from "@/lib/session";
 import { Submit } from "@/components/ui";
 import { Banner } from "@/components/bits";
-import { rotateSecret, saveSettings } from "@/app/actions/inbox";
+import { rotateSecret, saveNumbers, saveSettings } from "@/app/actions/inbox";
 
 export const metadata = { title: "Settings" };
 export const dynamic = "force-dynamic";
@@ -45,12 +45,40 @@ export default async function Settings({ searchParams }: { searchParams: { ok?: 
             <input name="private_message_ar" defaultValue={s?.private_message_ar} className="input" /></label>
         </section>
         <section className="card space-y-3 p-4 lg:col-span-2">
+          <h2 className="font-semibold text-gold-100">{ar ? "طريقة الحجز" : "Booking flow"}</h2>
+          <select name="booking_flow" defaultValue={s?.booking_flow ?? "slots"} className="input">
+            <option value="slots">{ar ? "البوت يسجّل طلب الحجز: اليوم + الوقت، والفريق يأكد" : "The bot takes a booking request: day + time; the team confirms"}</option>
+            <option value="intake">{ar ? "أسئلة الحجز: سؤال الفلترة ← أول كشف ولا متابعة ← الوقت ← الاسم ← تحويل لخدمة العملاء" : "Intake: filter question → first visit or follow-up → time → name → customer service"}</option>
+          </select>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="block"><span className="label">{ar ? "سؤال أول كشف ولا متابعة (فاضي = مايتسألش)" : "First visit or follow-up question (empty = not asked)"}</span><input name="intake_visit_ar" defaultValue={s?.intake_visit_ar ?? ""} placeholder="ده أول كشف ليك عندنا ولا متابعة؟" className="input" /></label>
+            <label className="block"><span className="label">Visit question (EN)</span><input name="intake_visit_en" defaultValue={s?.intake_visit_en ?? ""} className="input" dir="ltr" /></label>
+            <label className="block"><span className="label">{ar ? "رسالة آخر الأسئلة ({name} = الاسم)" : "After the last question ({name} = name)"}</span><textarea name="intake_done_ar" rows={2} defaultValue={s?.intake_done_ar ?? ""} className="input" /></label>
+            <label className="block"><span className="label">After the last question (EN)</span><textarea name="intake_done_en" rows={2} defaultValue={s?.intake_done_en ?? ""} className="input" dir="ltr" /></label>
+            <label className="block"><span className="label">{ar ? "رد الطوارئ" : "Emergency reply"}</span><textarea name="emergency_ar" rows={2} defaultValue={s?.emergency_ar ?? ""} className="input" /></label>
+            <label className="block"><span className="label">Emergency (EN)</span><textarea name="emergency_en" rows={2} defaultValue={s?.emergency_en ?? ""} className="input" dir="ltr" /></label>
+            <label className="block"><span className="label">{ar ? "رد السؤال الطبي (دوا، جرعة، تشخيص)" : "Medical question reply (medicine, dose, diagnosis)"}</span><textarea name="medical_ar" rows={2} defaultValue={s?.medical_ar ?? ""} className="input" /></label>
+            <label className="block"><span className="label">Medical reply (EN)</span><textarea name="medical_en" rows={2} defaultValue={s?.medical_en ?? ""} className="input" dir="ltr" /></label>
+          </div>
+          <p className="muted text-xs">{ar ? "الخانات الفاضية بتستخدم الرد الافتراضي." : "Empty fields use the default reply."}</p>
+        </section>
+        <section className="card space-y-3 p-4 lg:col-span-2">
           <h2 className="font-semibold text-gold-100">{ar ? "الربط بنظام العميل (مثل Golden Care OS)" : "Client system integration (e.g. Golden Care OS)"}</h2>
           <p className="muted text-xs">{ar ? "كل عميل جديد، وطلب حجز، وتحويل لموظف يتبعت لنظامكم موقّعًا (X-Engage-Signature) مع إعادة المحاولة تلقائيًا." : "Every new lead, booking request and handoff is sent to your system, signed (X-Engage-Signature), with automatic retries."}</p>
           <label className="block"><span className="label">{ar ? "رابط الاستقبال" : "Receiving URL"}</span><input name="integration_url" defaultValue={s?.integration_url ?? ""} placeholder="https://…/api/integrations/engage" className="input num" /></label>
           <p className="text-xs">{ar ? "رابط Webhook الخاص بـMeta (يتسجل مرة واحدة في تطبيق Meta): " : "Meta webhook URL (registered once in the Meta app): "}<code className="num rounded bg-coal-900 px-2 py-1 text-gold-100">{origin}/api/webhooks/meta</code></p>
         </section>
         <Submit className="btn-gold lg:col-span-2">{ar ? "حفظ الإعدادات" : "Save settings"}</Submit>
+      </form>
+      <form action={saveNumbers} className="card mt-4 grid gap-3 p-4 sm:grid-cols-2">
+        <h2 className="font-semibold text-gold-100 sm:col-span-2">{ar ? "أرقام التجربة والفريق" : "Test and staff numbers"}</h2>
+        {(s?.test_numbers ?? []).length > 0 && <p className="rounded-lg border border-gold-300/40 bg-gold-300/10 px-3 py-2 text-sm text-gold-100 sm:col-span-2">
+          {ar ? "وضع التجربة شغال: البوت بيرد بس على أرقام التجربة، والكومنتات متوقفة. فضّي القائمة عشان البوت يرد على كل الناس." : "Test mode is ON: the bot answers only the test numbers and comments are paused. Empty the list to answer everyone."}</p>}
+        <label className="block"><span className="label">{ar ? "أرقام التجربة — لو فيها أرقام، البوت مايردش غير عليها (رقم في كل سطر)" : "Test numbers — when set, the bot answers ONLY these (one per line)"}</span>
+          <textarea name="test_numbers" rows={4} defaultValue={(s?.test_numbers ?? []).join("\n")} placeholder="01xxxxxxxxx" className="input num" dir="ltr" /></label>
+        <label className="block"><span className="label">{ar ? "أرقام الفريق والدكاترة — البوت عمره ما يرد عليها" : "Staff and doctors — the bot never answers them"}</span>
+          <textarea name="staff_numbers" rows={4} defaultValue={(s?.staff_numbers ?? []).join("\n")} placeholder="01xxxxxxxxx" className="input num" dir="ltr" /></label>
+        <Submit className="btn-gold sm:col-span-2">{ar ? "حفظ الأرقام" : "Save numbers"}</Submit>
       </form>
       {ctx.role === "owner" && (
         <section className="card mt-4 space-y-2 p-4 text-sm">
